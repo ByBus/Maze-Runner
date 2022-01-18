@@ -1,5 +1,6 @@
 package maze;
 
+import java.io.Serializable;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -7,12 +8,12 @@ import java.util.stream.IntStream;
 public class Maze {
     private static final String WALL ="\u2588\u2588";
     private static final String PASS ="  ";
-    private final Graph graph;
-    private final LinkedHashMap<Node, List<Edge>> graphNodes;
-    private final LinkedHashMap<Node, List<Edge>> spanningTree = new LinkedHashMap<>();
+    private Graph graph;
+    private LinkedHashMap<Node, List<Edge>> graphNodes;
+    private LinkedHashMap<Node, List<Edge>> spanningTree;
 
-    private final PriorityQueue<Edge> queue = new PriorityQueue<>();
-    private final Set<Node> visitedNodes = new HashSet<>();
+    private PriorityQueue<Edge> queue;
+    private Set<Node> visitedNodes;
 
     private enum Side {
         LEFT,
@@ -24,6 +25,15 @@ public class Maze {
     public Maze(Graph graph) {
         this.graph = graph;
         this.graphNodes = graph.getGraph();
+        init(graph);
+    }
+
+    public void init(Graph graph) {
+        this.graph = graph;
+        this.graphNodes = graph.getGraph();
+        spanningTree = new LinkedHashMap<>();
+        queue = new PriorityQueue<>();
+        visitedNodes = new HashSet<>();
     }
 
     public void generate() {
@@ -154,5 +164,27 @@ public class Maze {
             sb.append("\n");
         }
         return sb.toString();
+    }
+
+    public MazeState getState() {
+        return new MazeState(graph, spanningTree);
+    }
+
+    public void setState(MazeState state) {
+        graph = state.graphState;
+        graphNodes = state.graphState.getGraph();
+        spanningTree = state.spanningTreeState;
+    }
+
+    static class MazeState implements Serializable {
+        private static final long serialVersionUID = 7076557791987400397L;
+        private final Graph graphState;
+        private final LinkedHashMap<Node, List<Edge>> spanningTreeState;
+
+        public MazeState(Graph graph,
+                         LinkedHashMap<Node, List<Edge>> spanningTree) {
+            this.graphState = graph;
+            this.spanningTreeState = spanningTree;
+        }
     }
 }

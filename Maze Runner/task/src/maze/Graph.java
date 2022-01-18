@@ -1,20 +1,29 @@
 package maze;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Random;
 
-public class Graph {
-    private final int width;
-    private final int height;
-    private final Node[][] matrix;
-    private final LinkedHashMap<Node, List<Edge>> graph = new LinkedHashMap<>();
+public class Graph implements Serializable {
+    private static final long serialVersionUID = 1424735767359371007L;
+    private int width;
+    private int height;
+    private Node[][] matrix;
+    private transient LinkedHashMap<Node, List<Edge>> graph;
 
     public Graph(int height, int weight) {
+        initGraph(height, weight);
+    }
+
+    public Graph() { }
+
+    public void initGraph(int height, int weight) {
         this.width = weight;
         this.height = height;
         matrix = new Node[height][width];
+        graph = new LinkedHashMap<>();
         initMatrix();
         createGraph();
     }

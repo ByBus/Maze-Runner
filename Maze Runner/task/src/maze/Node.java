@@ -1,8 +1,10 @@
 package maze;
 
+import java.io.Serializable;
 import java.util.Objects;
 
-public class Node {
+public class Node implements Serializable {
+    private static final long serialVersionUID = -3940951508454128896L;
     private final int number;
     public boolean isWall = true;
 

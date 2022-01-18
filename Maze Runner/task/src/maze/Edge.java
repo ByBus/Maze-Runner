@@ -1,8 +1,10 @@
 package maze;
 
+import java.io.Serializable;
 import java.util.Objects;
 
-public class Edge implements Comparable<Edge> {
+public class Edge implements Comparable<Edge>, Serializable {
+    private static final long serialVersionUID = 291037154352148229L;
     private Node from;
     private Node to;
     int weight;

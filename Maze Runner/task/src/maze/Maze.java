@@ -26,8 +26,14 @@ public class Maze {
         this.graphNodes = graph.getGraph();
     }
 
-    public void generateSpanningTree() {
+    public void generate() {
+        generateSpanningTree();
+        prepareMaze();
+    }
+
+    private void generateSpanningTree() {
         Node start = graph.getStart();
+        spanningTree.putIfAbsent(start, new ArrayList<>());
         processEdges(start);
     }
 
@@ -44,11 +50,15 @@ public class Maze {
             Edge edge = queue.poll();
             spanningTree.putIfAbsent(edge.getFrom(), new ArrayList<>());
             spanningTree.get(edge.getFrom()).add(edge);
+
+            spanningTree.putIfAbsent(edge.getTo(), new ArrayList<>());
+            spanningTree.get(edge.getTo()).add(edge.flip());
+
             processEdges(edge.getTo());
         }
     }
 
-    public void prepareMaze() {
+    private void prepareMaze() {
         Node[][] matrix = graph.getMatrix();
         for (Node[] row : matrix) {
             for (Node currentNode : row) {

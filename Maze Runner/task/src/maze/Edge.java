@@ -1,18 +1,13 @@
 package maze;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
 
 public class Edge implements Comparable<Edge> {
-    List<Node> connectedNodes = new ArrayList<>();
     private Node from;
     private Node to;
     int weight;
 
     public Edge(Node from, Node to, int weight) {
-        connectedNodes.add(from);
-        connectedNodes.add(to);
         this.setFrom(from);
         this.setTo(to);
         this.weight = weight;
@@ -20,7 +15,7 @@ public class Edge implements Comparable<Edge> {
 
     @Override
     public String toString() {
-        return getFrom() + " -> " + getTo() + " |" + weight;
+        return from + " -> " + to + " |" + weight;
     }
 
     @Override
@@ -51,5 +46,9 @@ public class Edge implements Comparable<Edge> {
 
     public void setTo(Node to) {
         this.to = to;
+    }
+
+    public Edge flip() {
+        return new Edge(to, from, weight);
     }
 }

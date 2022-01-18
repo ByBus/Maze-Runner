@@ -37,20 +37,20 @@ public class Graph {
         for (int y = 1; y < height - 1; y += 2) {
             for (int x = 1; x < width - 1; x += 2) {
                 Node node = matrix[y][x];
-                for (int yAdj : List.of(y - 2, y, y + 2)) {
-                    for (int xAdj : List.of(x - 2, x, x + 2)) {
-                        if ((x == xAdj && y == yAdj) || (x != xAdj && y != yAdj)) {
+                for (int yAdjacent : List.of(y - 2, y, y + 2)) {
+                    for (int xAdjacent : List.of(x - 2, x, x + 2)) {
+                        if ((x == xAdjacent && y == yAdjacent) || (x != xAdjacent && y != yAdjacent)) {
                             continue;
                         }
-                        if (yAdj == height - 1) {
-                            yAdj -= 1;
+                        if (yAdjacent == height - 1) {
+                            yAdjacent -= 1;
                         }
-                        if (xAdj == width - 1) {
-                            xAdj -= 1;
+                        if (xAdjacent == width - 1) {
+                            xAdjacent -= 1;
                         }
                         try {
-                            Node adjacentNode = matrix[yAdj][xAdj];
-                            int weight = rand.nextInt(width) + 1;
+                            Node adjacentNode = matrix[yAdjacent][xAdjacent];
+                            int weight = rand.nextInt(width * height) + 1;
                             addEdge(node, adjacentNode, weight);
                         } catch (IndexOutOfBoundsException ignore) { }
                     }
@@ -64,7 +64,7 @@ public class Graph {
         List<Edge> edges = graph.get(from);
         if (!edges.contains(edge)) {
             graph.get(from).add(edge);
-            graph.get(to).add(new Edge(to, from, weight));
+            graph.get(to).add(edge.flip());
         }
     }
 

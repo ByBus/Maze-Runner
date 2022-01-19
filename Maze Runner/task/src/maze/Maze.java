@@ -195,12 +195,8 @@ public class Maze {
             }
             stack.push(to);
             if (traverseWithDepthFirst(to, stack, visited, exit)) {
-                isPathFound = true;
-                break;
+               return true;
             }
-        }
-        if (isPathFound) {
-            return true;
         }
         stack.pop();
         return false;

@@ -53,4 +53,18 @@ public class Edge implements Comparable<Edge>, Serializable {
     public Edge flip() {
         return new Edge(to, from, weight);
     }
+
+    public int[] getCoordinates() {
+        int x = -1;
+        int y = -1;
+        if (from.getX() == to.getX() && Math.abs(from.getY() - to.getY()) == 2) {
+            x = from.getX();
+            y = (from.getY() + to.getY()) / 2;
+        }
+        if (from.getY() == to.getY() && Math.abs(from.getX() - to.getX()) == 2) {
+            x = (from.getX() + to.getX()) / 2;
+            y = from.getY();
+        }
+        return new int[]{y, x};
+    }
 }

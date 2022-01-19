@@ -8,12 +8,12 @@ import java.util.stream.IntStream;
 public class Maze {
     private static final String WALL ="\u2588\u2588";
     private static final String PASS ="  ";
-    private Graph graph;
-    private LinkedHashMap<Node, List<Edge>> graphNodes;
-    private LinkedHashMap<Node, List<Edge>> spanningTree;
+    private static final String PATH ="//";
 
-    private PriorityQueue<Edge> queue;
-    private Set<Node> visitedNodes;
+    private GraphMaker graphMaker;
+    private Map<Node, List<Edge>> graph;
+    private LinkedHashMap<Node, List<Edge>> spanningTree;
+    private List<Node> pathToExit;
 
     private enum Side {
         LEFT,
@@ -22,18 +22,15 @@ public class Maze {
         BOTTOM
     }
 
-    public Maze(Graph graph) {
-        this.graph = graph;
-        this.graphNodes = graph.getGraph();
-        init(graph);
+    public Maze(GraphMaker graphMaker) {
+        init(graphMaker);
     }
 
-    public void init(Graph graph) {
-        this.graph = graph;
-        this.graphNodes = graph.getGraph();
+    public void init(GraphMaker graphMaker) {
+        this.graphMaker = graphMaker;
+        this.graph = graphMaker.getGraph();
         spanningTree = new LinkedHashMap<>();
-        queue = new PriorityQueue<>();
-        visitedNodes = new HashSet<>();
+        pathToExit = new ArrayList<>();
     }
 
     public void generate() {
@@ -42,18 +39,23 @@ public class Maze {
     }
 
     private void generateSpanningTree() {
-        Node start = graph.getStart();
+        PriorityQueue<Edge> queue = new PriorityQueue<>();
+        Set<Node> visitedNodes = new HashSet<>();
+
+        Node start = graphMaker.getStart();
         spanningTree.putIfAbsent(start, new ArrayList<>());
-        processEdges(start);
+        addEdgesToTree(start, queue, visitedNodes);
     }
 
-    private void processEdges(Node node) {
-        List<Edge> edges = graphNodes.get(node);
-        visitedNodes.add(node);
+    private void addEdgesToTree(Node node,
+                                PriorityQueue<Edge> queue,
+                                Set<Node> visited) {
+        List<Edge> edges = graph.get(node);
+        visited.add(node);
         for (Edge edge : edges) {
-            if (!visitedNodes.contains(edge.getTo())) {
+            if (!visited.contains(edge.getTo())) {
                 queue.add(edge);
-                visitedNodes.add(edge.getTo());
+                visited.add(edge.getTo());
             }
         }
         while (!queue.isEmpty()) {
@@ -64,12 +66,12 @@ public class Maze {
             spanningTree.putIfAbsent(edge.getTo(), new ArrayList<>());
             spanningTree.get(edge.getTo()).add(edge.flip());
 
-            processEdges(edge.getTo());
+            addEdgesToTree(edge.getTo(), queue, visited);
         }
     }
 
     private void prepareMaze() {
-        Node[][] matrix = graph.getMatrix();
+        Node[][] matrix = graphMaker.getMatrix();
         for (Node[] row : matrix) {
             for (Node currentNode : row) {
                 if (spanningTree.containsKey(currentNode)) {
@@ -90,7 +92,7 @@ public class Maze {
     }
 
     private void addEnter(Side side) {
-        Node[][] matrix = graph.getMatrix();
+        Node[][] matrix = graphMaker.getMatrix();
         List<Node> nodesToConnect;
         switch (side) {
             case LEFT:
@@ -99,6 +101,7 @@ public class Maze {
                 nodesToConnect = IntStream.range(1, matrix.length - 1)
                         .mapToObj(y -> matrix[y][x])
                         .filter(node -> !node.isWall())
+                        .filter(node -> spanningTree.containsKey(node))
                         .collect(Collectors.toList());
                 break;
             case TOP:
@@ -106,6 +109,7 @@ public class Maze {
                 int y = side == Side.TOP ? 1 : matrix.length - 2;
                 nodesToConnect = Arrays.stream(matrix[y], 1, matrix[0].length - 1)
                         .filter(node -> !node.isWall())
+                        .filter(node -> spanningTree.containsKey(node))
                         .collect(Collectors.toList());
                 break;
             default:
@@ -116,7 +120,7 @@ public class Maze {
     }
 
     private void connectEnterTo(Side side, Node connection) {
-        Node[][] matrix = graph.getMatrix();
+        Node[][] matrix = graphMaker.getMatrix();
         Node enter;
         switch (side) {
             case LEFT:
@@ -135,31 +139,79 @@ public class Maze {
                 throw new IllegalStateException("Unexpected value: " + side);
         }
         enter.setPassage();
-        spanningTree.put(enter, List.of(new Edge(enter, connection, 1)));
+        Edge edge = new Edge(enter, connection, 1);
+        spanningTree.put(enter, List.of(edge));
+        spanningTree.get(connection).add(edge.flip());
     }
 
     private Node edgeToNode(Edge edge) {
-        int x = -1;
-        int y = -1;
-        if (edge.getFrom().getX() == edge.getTo().getX()
-                && Math.abs(edge.getFrom().getY() - edge.getTo().getY()) == 2) {
-            x = edge.getFrom().getX();
-            y = (edge.getFrom().getY() + edge.getTo().getY()) / 2;
+        int[] coord = edge.getCoordinates();
+        if (Arrays.stream(coord).anyMatch(x -> x == -1)) {
+            return null;
         }
-        if (edge.getFrom().getY() == edge.getTo().getY()
-                && Math.abs(edge.getFrom().getX() - edge.getTo().getX()) == 2) {
-            x = (edge.getFrom().getX() + edge.getTo().getX()) / 2;
-            y = edge.getFrom().getY();
+        return graphMaker.getMatrix()[coord[0]][coord[1]];
+    }
+
+    public void findShortestPath() {
+        List<Node> visited = new ArrayList<>();
+        Deque<Node> stack = new ArrayDeque<>();
+        Node enter = getEntrance(1);
+        Node exit = getEntrance(2);
+        stack.push(enter);
+        traverseWithDepthFirst(enter, stack, visited, exit);
+        while (!stack.isEmpty()) {
+            pathToExit.add(stack.pop());
         }
-        return x == -1 || y == -1 ? null : graph.getMatrix()[y][x];
+        addEdgesToPath();
+    }
+
+    private Node getEntrance(int indexFromEnd) {
+        List<Node> nodes = new ArrayList<>(spanningTree.keySet());
+        return nodes.get(nodes.size() - indexFromEnd);
+    }
+
+    public void addEdgesToPath() {
+        List<Node> nodesOnEdgesPositions = IntStream.range(0, pathToExit.size() - 2)
+                .mapToObj(i -> new Edge(pathToExit.get(i), pathToExit.get(i + 1), 1))
+                .map(this::edgeToNode)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+        pathToExit.addAll(nodesOnEdgesPositions);
+    }
+
+    private boolean traverseWithDepthFirst(Node node,
+                                           Deque<Node> stack,
+                                           List<Node> visited,
+                                           Node exit) {
+        boolean isPathFound = false;
+        if (node.equals(exit)) {
+            return true;
+        }
+        visited.add(node);
+        for (Edge edge : spanningTree.get(node)) {
+            Node to = edge.getTo();
+            if (visited.contains(to)) {
+                continue;
+            }
+            stack.push(to);
+            if (traverseWithDepthFirst(to, stack, visited, exit)) {
+                isPathFound = true;
+                break;
+            }
+        }
+        if (isPathFound) {
+            return true;
+        }
+        stack.pop();
+        return false;
     }
 
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        for (Node[] row : graph.getMatrix()) {
+        for (Node[] row : graphMaker.getMatrix()) {
             Arrays.stream(row)
-                    .map(node -> node.isWall() ? WALL : PASS)
+                    .map(node -> pathToExit.contains(node) ? PATH : node.isWall() ? WALL : PASS)
                     .forEach(sb::append);
             sb.append("\n");
         }
@@ -167,24 +219,26 @@ public class Maze {
     }
 
     public MazeState getState() {
-        return new MazeState(graph, spanningTree);
+        return new MazeState(graphMaker, spanningTree);
     }
 
     public void setState(MazeState state) {
-        graph = state.graphState;
-        graphNodes = state.graphState.getGraph();
-        spanningTree = state.spanningTreeState;
+        graphMaker = state.graphMaker;
+        graph = state.graphMaker.getGraph();
+        spanningTree = state.spanningTree;
+        pathToExit = new ArrayList<>();
     }
 
     static class MazeState implements Serializable {
         private static final long serialVersionUID = 7076557791987400397L;
-        private final Graph graphState;
-        private final LinkedHashMap<Node, List<Edge>> spanningTreeState;
 
-        public MazeState(Graph graph,
+        private final GraphMaker graphMaker;
+        private final LinkedHashMap<Node, List<Edge>> spanningTree;
+
+        public MazeState(GraphMaker graphMaker,
                          LinkedHashMap<Node, List<Edge>> spanningTree) {
-            this.graphState = graph;
-            this.spanningTreeState = spanningTree;
+            this.graphMaker = graphMaker;
+            this.spanningTree = spanningTree;
         }
     }
 }

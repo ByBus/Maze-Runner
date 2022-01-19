@@ -7,10 +7,10 @@ public class Main {
     private static boolean isMazeLoaded = false;
 
     public static void main(String[] args) throws IOException {
-        Graph graph = new Graph();
-        Maze maze = new Maze(graph);
+        GraphMaker graphMaker = new GraphMaker();
+        Maze maze = new Maze(graphMaker);
         Memory memory = new Memory(maze);
-        Facade facade = new Facade(graph, maze, memory);
+        Facade facade = new Facade(graphMaker, maze, memory);
         menu(facade);
     }
 
@@ -25,6 +25,7 @@ public class Main {
             if (isMazeLoaded) {
                 System.out.println("3. Save the maze");
                 System.out.println("4. Display the maze");
+                System.out.println("5. Find the escape");
             }
             System.out.println("0. Exit");
             input = scanner.nextLine();
@@ -53,6 +54,9 @@ public class Main {
                 case "4":
                     facade.displayMaze();
                     break;
+                case "5":
+                    facade.findEscape();
+                    break;
             }
         }
         System.out.println("Bye!");
@@ -64,6 +68,7 @@ public class Main {
             isMazeLoaded = true;
             allowedCommand.add("3");
             allowedCommand.add("4");
+            allowedCommand.add("5");
         }
     }
 }

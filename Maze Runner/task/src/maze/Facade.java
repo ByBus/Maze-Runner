@@ -4,12 +4,12 @@ import java.io.IOException;
 import java.util.Scanner;
 
 public class Facade {
-    private final Graph graph;
+    private final GraphMaker graphMaker;
     private final Maze maze;
     private final Memory memory;
 
-    public Facade(Graph graph, Maze maze, Memory memory) {
-        this.graph = graph;
+    public Facade(GraphMaker graphMaker, Maze maze, Memory memory) {
+        this.graphMaker = graphMaker;
         this.maze = maze;
         this.memory = memory;
     }
@@ -18,11 +18,10 @@ public class Facade {
         Scanner scanner = new Scanner(System.in);
         System.out.println("Please, enter the size of a maze");
         int size = scanner.nextInt();
-        graph.initGraph(size, size);
-        maze.init(graph);
+        graphMaker.make(size, size);
+        maze.init(graphMaker);
         maze.generate();
         displayMaze();
-        //scanner.close();
     }
 
     public void displayMaze() {
@@ -33,13 +32,16 @@ public class Facade {
         Scanner scanner = new Scanner(System.in);
         String fileName = scanner.nextLine();
         memory.loadFromFile(fileName);
-        //scanner.close();
     }
 
     public void saveMaze() throws IOException {
         Scanner scanner = new Scanner(System.in);
         String fileName = scanner.nextLine();
         memory.saveToFile(fileName);
-        //scanner.close();
+    }
+
+    public void findEscape() {
+        maze.findShortestPath();
+        displayMaze();
     }
 }

@@ -183,7 +183,6 @@ public class Maze {
                                            Deque<Node> stack,
                                            List<Node> visited,
                                            Node exit) {
-        boolean isPathFound = false;
         if (node.equals(exit)) {
             return true;
         }
